@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoReel AI - Text to Video</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      color: #222;
+      margin: 0;
+      padding: 20px;
+      transition: background 0.3s, color 0.3s;
+    }
+    .dark-mode {
+      background: #121212;
+      color: #fff;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    textarea {
+      width: 100%;
+      height: 100px;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    video, audio {
+      width: 100%;
+      margin-top: 20px;
+      display: block;
+    }
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      margin-top: 30px;
+      color: gray;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🎬 AutoReel AI</h2>
+    <p>حوّل النص إلى فيديو وصوت حقيقي</p>
+    <textarea id="text" placeholder="أدخل النص هنا..."></textarea>
+    <button onclick="generate()">🔊 توليد الفيديو والصوت</button>
+    <button onclick="toggleMode()">🌓 وضع ليلي/نهاري</button>
+    <div id="output"></div>
+  </div>
+
+  <div class="footer">© AutoReel AI - Powered by ElevenLabs & Pexels</div>
+
+  <script>
+    const elevenApiKey = "sk_3db5edeb7be2cf74b911f4e90d678784b726b29017067bfa";
+    const pexelsApiKey = "kQkFcGsak0LwXThqyKjrhAArwowizrHoeH9aja6988VqohTXR33b2Wpo";
+    const voiceId = "pqHfZKP75CvOlQylNhV4"; // من رابط ElevenLabs
+
+    async function generate() {
+      const text = document.getElementById("text").value;
+      const output = document.getElementById("output");
+      output.innerHTML = "⏳ جارٍ التوليد...";
+
+      try {
+        // توليد الصوت
+        const audioRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
+          method: "POST",
+          headers: {
+            "xi-api-key": elevenApiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: text,
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.75
+            }
+          })
+        });
+
+        if (!audioRes.ok) throw new Error("فشل في توليد الصوت");
+
+        const audioBlob = await audioRes.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        // جلب فيديو من Pexels
+        const search = text.split(" ")[0];
+        const videoRes = await fetch(`https://api.pexels.com/videos/search?query=${search}&per_page=1`, {
+          headers: {
+            Authorization: pexelsApiKey
+          }
+        });
+
+        const videoData = await videoRes.json();
+        const videoUrl = videoData.videos[0]?.video_files[0]?.link;
+
+        if (videoUrl && audioUrl) {
+          output.innerHTML = `
+            <video id="video" controls src="${videoUrl}"></video>
+            <audio id="audio" controls src="${audioUrl}"></audio>
+            <button onclick="downloadBoth('${audioUrl}', '${videoUrl}')">⬇️ تحميل</button>
+          `;
+        } else {
+          output.innerHTML = "❌ تعذر توليد الفيديو أو الصوت.";
+        }
+      } catch (err) {
+        output.innerHTML = "❌ حدث خطأ: " + err.message;
+      }
+    }
+
+    function toggleMode() {
+      document.body.classList.toggle("dark-mode");
+    }
+
+    function downloadBoth(audio, video) {
+      const a = document.createElement("a");
+      a.href = video;
+      a.download = "video.mp4";
+      a.click();
+
+      setTimeout(() => {
+        const b = document.createElement("a");
+        b.href = audio;
+        b.download = "audio.mp3";
+        b.click();
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
