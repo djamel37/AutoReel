@@ -2,6 +2,8 @@
 // Generates TTS via ElevenLabs, fetches stock video from Pexels,
 // converts to 1080x1920 vertical if needed, and merges audio+video.
 
+const cors = require('cors');
+app.use(cors()); // السماح لجميع الدومينات
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
